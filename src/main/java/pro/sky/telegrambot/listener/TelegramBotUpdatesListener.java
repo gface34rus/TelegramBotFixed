@@ -57,7 +57,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
                 try {
                     taskRepository.save(new NotificationTask(
                                     chatId,
-                                    matcher.group(2),
+                                    matcher.group(0),
                                     LocalDateTime.parse(matcher.group(1), botDateFormatter)
                             )
                     );
