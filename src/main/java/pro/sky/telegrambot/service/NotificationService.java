@@ -13,5 +13,22 @@ import java.util.stream.Collectors;
 
 @Service
 public class NotificationService {
+    private final TelegramBotUpdatesListener listener;
+    private final TaskRepository taskRepository;
 
+    public NotificationService(TelegramBotUpdatesListener listener, TaskRepository taskRepository) {
+        this.listener = listener;
+        this.taskRepository = taskRepository;
+
+    }
+
+    public void sendNotificationsByDate() {
+        List<NotificationTask> task = taskRepository.findByNotificationDateBetween(
+                LocalDateTime.now().minusSeconds(60),
+                LocalDateTime.now());
+        Set<SendMessage> messages = task.stream()
+                .map(t -> new SendMessage(t.getChatId(), t.getText()))
+                .collect(Collectors.toSet());
+        listener.execute(messages);
+    }
 }

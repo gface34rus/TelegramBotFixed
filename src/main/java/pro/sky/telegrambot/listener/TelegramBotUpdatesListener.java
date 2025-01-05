@@ -39,5 +39,60 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
     @Override
     public int process(List<Update> updates) {
+        updates.forEach(update -> {
+            String text = update.message().text();
 
+            logger.info("Processing update text: {}", text);
+            if (!isTextExist(update)) {
+                logger.warn("Not expected message: {}", text);
+                return;
+            }
+            Matcher matcher = DATE_VALIDATION_PATTERN.matcher(text);
+            String chatId = getChatId(update);
+            SendMessage sendMessage = null;
+
+            if (text.equals(START)) {
+                sendMessage = new SendMessage(chatId, WELCOME_MESSAGE);
+            } else if (matcher.matches()) {
+                try {
+                    taskRepository.save(new NotificationTask(
+                                    chatId,
+                                    matcher.group(2),
+                                    LocalDateTime.parse(matcher.group(1), botDateFormatter)
+                            )
+                    );
+                    sendMessage = new SendMessage(chatId, TASK_ADDED);
+                } catch (DateTimeParseException e) {
+                    logger.error("[{}]", e.getMessage());
+                    sendMessage = new SendMessage(chatId, "Не корректная дата");
+                }
+            }
+            if (sendMessage != null) {
+                execute(sendMessage);
+            }
+
+        });
+        return UpdatesListener.CONFIRMED_UPDATES_ALL;
+    }
+
+    public void execute(Collection<SendMessage> messages) {
+        messages.forEach(bot::execute);
+
+    }
+
+    public void execute(SendMessage messages) {
+        execute(List.of(messages));
+    }
+
+
+    private boolean isTextExist(Update update) {
+        return update.message() != null && !update.message().text().isBlank();
+    }
+
+    private String getChatId(Update update) {
+        if (update.message().chat() == null) {
+            throw new IllegalArgumentException("Отсутствует chatId");
+        }
+        return String.valueOf(update.message().chat().id());
+    }
 }

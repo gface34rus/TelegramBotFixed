@@ -6,5 +6,14 @@ import pro.sky.telegrambot.service.NotificationService;
 
 @Component
 public class BotTaskScheduler {
+    private final NotificationService notificationService;
 
+    public BotTaskScheduler(NotificationService notificationService) {
+        this.notificationService = notificationService;
+    }
+
+    @Scheduled(cron = "0 0/1 * * * * ")
+    public void execute() {
+        notificationService.sendNotificationsByDate();
+    }
 }
